@@ -4,6 +4,8 @@ import signal
 import sys
 import melee
 
+from classes.personnage import Personnage
+
 # This example program demonstrates how to use the Melee API to run a console,
 #   setup controllers, and send button presses over to a console
 
@@ -23,7 +25,7 @@ if __name__ == "__main__":
 	parser.add_argument('--dolphin_executable_path', '-e', default='',
 											help='The directory where dolphin is')
 	parser.add_argument('--connect_code', '-t', default="",
-                    help='Direct connect code to connect to in Slippi Online')
+											help='Direct connect code to connect to in Slippi Online')
 	parser.add_argument('--iso', default='', type=str,
 											help='Path to melee iso.')
 
@@ -102,6 +104,8 @@ if __name__ == "__main__":
 
 	menu_helper = melee.MenuHelper()
 
+	personnage = Personnage(controllers[1])
+
 	# Main loop
 	while(True):
 		# "step" to the next frame
@@ -120,8 +124,22 @@ if __name__ == "__main__":
 				# NOTE: This is where your AI does all of its stuff!
 				# This line will get hit once per frame, so here is where you read
 				#   in the gamestate and decide what buttons to push on the controller
+
+				# Suivre l'opposant.
 				onleft = gamestate.players[controller.port].position.x < gamestate.players[4].position.x
 				controller.tilt_analog(melee.enums.Button.BUTTON_MAIN, int(onleft), 0.5)
+
+				# Sauter au besoin
+				if(gamestate.players[controller.port].position.y <= gamestate.players[4].position.y and abs(gamestate.players[controller.port].position.y - gamestate.players[4].position.y) > 25):
+					if(not controller.prev.button[melee.enums.Button.BUTTON_Y]):
+						controller.press_button(melee.enums.Button.BUTTON_Y)
+					else:
+						controller.release_button(melee.enums.Button.BUTTON_Y)
+
+				# Essaye chaque coup, prend le premier que devrais toucher.
+				for coup in personnage.coups:
+					if(personnage.coups[coup].est_à_portée(gamestate.players[controller.port].position, gamestate.players[4].position)):
+						personnage.effectuer_coup(personnage.coups[coup])
 
 			# Log this frame's detailed info if we're in game
 			if log:
@@ -132,8 +150,8 @@ if __name__ == "__main__":
 				menu_helper.menu_helper_simple(
 					gamestate,
 					controller,
-					melee.Character.FOX,
-					melee.Stage.YOSHIS_STORY,
+					melee.Character.LUIGI,
+					melee.Stage.RANDOM_STAGE,
 					args.connect_code,
 					costume=port,
 					autostart=port == 1,
