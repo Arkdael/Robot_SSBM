@@ -55,13 +55,13 @@ if __name__ == "__main__":
 	#   Your controller is your way of sending button presses to the game, whether
 	#   virtual or physical.
 
-	ports = [1]
-	for port in ports:
-		controllers = {
+	ports = [1, 2]
+	controllers = {
 			port: melee.Controller(
-				console=console,
-				port=port,
-				type=melee.ControllerType.STANDARD)
+					console=console,
+					port=port,
+					type=melee.ControllerType.STANDARD)
+			for port in ports
 	}
 
 	# This isn't necessary, but makes it so that Dolphin will get killed when you ^C
@@ -104,8 +104,8 @@ if __name__ == "__main__":
 
 	menu_helper = melee.MenuHelper()
 
-	personnage = Personnage(controllers[1])
-
+	personnage = Personnage(controllers.get(1))
+	print(controllers)
 	# Main loop
 	while(True):
 		# "step" to the next frame
@@ -125,20 +125,23 @@ if __name__ == "__main__":
 				# This line will get hit once per frame, so here is where you read
 				#   in the gamestate and decide what buttons to push on the controller
 
+				port_opposant = list(filter(lambda controller: controller[1].port is not port, controllers.items()))[-1][1].port
+
 				# Suivre l'opposant.
-				onleft = gamestate.players[controller.port].position.x < gamestate.players[4].position.x
+				onleft = gamestate.players[controller.port].position.x < gamestate.players[port_opposant].position.x
 				controller.tilt_analog(melee.enums.Button.BUTTON_MAIN, int(onleft), 0.5)
 
 				# Sauter au besoin
-				if(gamestate.players[controller.port].position.y <= gamestate.players[4].position.y and abs(gamestate.players[controller.port].position.y - gamestate.players[4].position.y) > 25):
-					if(not controller.prev.button[melee.enums.Button.BUTTON_Y]):
-						controller.press_button(melee.enums.Button.BUTTON_Y)
-					else:
-						controller.release_button(melee.enums.Button.BUTTON_Y)
+				if(gamestate.players[controller.port].position.y <= gamestate.players[port_opposant].position.y and abs(gamestate.players[controller.port].position.y - gamestate.players[port_opposant].position.y) > 25):
+					if(controller.prev is not None):
+						if(not controller.prev.button[melee.enums.Button.BUTTON_Y]):
+							controller.press_button(melee.enums.Button.BUTTON_Y)
+						else:
+							controller.release_button(melee.enums.Button.BUTTON_Y)
 
 				# Essaye chaque coup, prend le premier que devrais toucher.
 				for coup in personnage.coups:
-					if(personnage.coups[coup].est_à_portée(gamestate.players[controller.port].position, gamestate.players[4].position)):
+					if(personnage.coups[coup].est_à_portée(gamestate.players[controller.port].position, gamestate.players[port_opposant].position)):
 						personnage.effectuer_coup(personnage.coups[coup])
 
 			# Log this frame's detailed info if we're in game
@@ -147,15 +150,28 @@ if __name__ == "__main__":
 				log.writeframe()
 		else:
 			for port, controller in controllers.items():
-				menu_helper.menu_helper_simple(
-					gamestate,
-					controller,
-					melee.Character.LUIGI,
-					melee.Stage.RANDOM_STAGE,
-					args.connect_code,
-					costume=port,
-					autostart=port == 1,
-					swag=False)
+				if(port == 1):
+					menu_helper.menu_helper_simple(
+						gamestate,
+						controller,
+						melee.Character.LUIGI,
+						melee.Stage.RANDOM_STAGE,
+						args.connect_code,
+						costume=port,
+						autostart=port==1,
+						swag=False)
+				else:
+					menu_helper.menu_helper_simple(
+						gamestate,
+						controller,
+						melee.Character.FOX,
+						melee.Stage.RANDOM_STAGE,
+						args.connect_code,
+						7,
+						costume=port,
+						autostart=port==1,
+						swag=False
+					)
 
 			# If we're not in game, don't log the frame
 			if log:
