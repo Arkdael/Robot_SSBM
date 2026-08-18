@@ -4,6 +4,9 @@ import signal
 import sys
 import melee
 
+from Modules.Approche import ModuleApproche
+from Modules.Attaque import ModuleAttaque
+from Modules.Recovery import ModuleRecovery
 from classes.personnage import Personnage
 
 # This example program demonstrates how to use the Melee API to run a console,
@@ -55,7 +58,7 @@ if __name__ == "__main__":
 	#   Your controller is your way of sending button presses to the game, whether
 	#   virtual or physical.
 
-	ports = [1, 2]
+	ports = [1]
 	controllers = {
 			port: melee.Controller(
 					console=console,
@@ -104,8 +107,10 @@ if __name__ == "__main__":
 
 	menu_helper = melee.MenuHelper()
 
-	personnage = Personnage(controllers.get(1))
-	print(controllers)
+	moduleApproche = ModuleApproche(controller=controllers.get(1))
+	moduleAttaque = ModuleAttaque(controller=controllers.get(1))
+	moduleRecovery = ModuleRecovery(controller=controllers.get(1))
+
 	# Main loop
 	while(True):
 		# "step" to the next frame
@@ -121,28 +126,19 @@ if __name__ == "__main__":
 		# What menu are we in?
 		if gamestate.menu_state in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
 			for port, controller in controllers.items():
-				# NOTE: This is where your AI does all of its stuff!
-				# This line will get hit once per frame, so here is where you read
-				#   in the gamestate and decide what buttons to push on the controller
-
-				port_opposant = list(filter(lambda controller: controller[1].port is not port, controllers.items()))[-1][1].port
-
-				# Suivre l'opposant.
-				onleft = gamestate.players[controller.port].position.x < gamestate.players[port_opposant].position.x
-				controller.tilt_analog(melee.enums.Button.BUTTON_MAIN, int(onleft), 0.5)
-
-				# Sauter au besoin
-				if(gamestate.players[controller.port].position.y <= gamestate.players[port_opposant].position.y and abs(gamestate.players[controller.port].position.y - gamestate.players[port_opposant].position.y) > 25):
-					if(controller.prev is not None):
-						if(not controller.prev.button[melee.enums.Button.BUTTON_Y]):
-							controller.press_button(melee.enums.Button.BUTTON_Y)
-						else:
-							controller.release_button(melee.enums.Button.BUTTON_Y)
-
-				# Essaye chaque coup, prend le premier que devrais toucher.
-				for coup in personnage.coups:
-					if(personnage.coups[coup].est_à_portée(gamestate.players[controller.port].position, gamestate.players[port_opposant].position)):
-						personnage.effectuer_coup(personnage.coups[coup])
+				#port_opposant = list(filter(lambda controller: controller[1].port is not port, controllers.items()))[-1][1].port
+				port_opposant = 4
+				
+				if(gamestate.players[port].cpu_level <= 0):
+					# NOTE: This is where your AI does all of its stuff!
+					# This line will get hit once per frame, so here is where you read
+					#   in the gamestate and decide what buttons to push on the controller
+					if(moduleApproche.doit_approcher(gamestate=gamestate)):
+						moduleApproche.approcher(gamestate=gamestate, port_opposant=port_opposant)
+					if(moduleAttaque.doit_attaquer(gamestate=gamestate, port_opposant=port_opposant)):
+						moduleAttaque.attaquer(gamestate=gamestate, port_opposant=port_opposant)
+					if(moduleRecovery.doit_recover(gamestate=gamestate)):
+						moduleRecovery.recover(gamestate=gamestate)
 
 			# Log this frame's detailed info if we're in game
 			if log:
@@ -167,7 +163,7 @@ if __name__ == "__main__":
 						melee.Character.FOX,
 						melee.Stage.RANDOM_STAGE,
 						args.connect_code,
-						7,
+						9,
 						costume=port,
 						autostart=port==1,
 						swag=False
