@@ -31,13 +31,13 @@ class Personnage:
 		melee.enums.Action.SWORD_DANCE_1_AIR: Coup(melee.enums.Button.BUTTON_B, Coordonnées(None, 0.5), melee.Action.SWORD_DANCE_1_AIR),
 	}
 
-	def __init__(self, controller):
+	def __init__(self, controller: melee.Controller):
 		self.controller = controller
 		self.frameData = melee.framedata.FrameData()
 
 	def effectuer_coup(self, action: melee.enums.Action, direction: float = 1.0):
 		#TODO faire en sorte qu'on puisse spécifier pendant combien de frame maintenir le bouton avant de relacher.
-		coup = self.coups[action]
+		coup: Coup = self.coups[action]
 		
 		# Si le bouton est un stick, on l'incline plutôt que d'appuyer.
 		if(coup.bouton in [melee.enums.Button.BUTTON_MAIN, melee.enums.Button.BUTTON_C]):
@@ -52,21 +52,21 @@ class Personnage:
 			else:
 				self.controller.release_button(coup.bouton)
 
-	def in_range(self, attacker, defender, stage, action: melee.Action):
+	def in_range(self, attacker: melee.PlayerState, defender: melee.PlayerState, stage: melee.Stage, action: melee.Action):
 		"""Calculates if an attack is in range of a given defender
 
 		Args:
-				attacker (gamestate.PlayerState): The attacking player
-				defender (gamestate.PlayerState): The defending player
-				stage (enums.Stage): The stage being played on
+			attacker (gamestate.PlayerState): The attacking player
+			defender (gamestate.PlayerState): The defending player
+			stage (enums.Stage): The stage being played on
 
 		Returns:
-				integer with the frame that the specified attack will hit the defender
-				0 if it won't hit
+			integer with the frame that the specified attack will hit the defender
+			0 if it won't hit
 
 		Note:
-				This considers the defending character to have a single hurtbox, centered
-				at the x,y coordinates of the player (adjusted up a little to be centered)
+			This considers the defending character to have a single hurtbox, centered
+			at the x,y coordinates of the player (adjusted up a little to be centered)
 		"""
 
 		# Adjust the defender's hurtbox up a little, to be more centered.
@@ -84,7 +84,7 @@ class Personnage:
 			return False
 
 		if attackingframe['hitbox_1_status'] or attackingframe['hitbox_2_status'] or \
-				attackingframe['hitbox_3_status'] or attackingframe['hitbox_4_status']:
+		attackingframe['hitbox_3_status'] or attackingframe['hitbox_4_status']:
 			# Calculate the x and y positions of all 4 hitboxes for this frame
 			hitbox_1_x = float(attackingframe["hitbox_1_x"])
 			hitbox_1_y = float(attackingframe["hitbox_1_y"]) + attacker_y

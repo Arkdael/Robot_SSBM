@@ -7,7 +7,7 @@ class Coordonnées:
 		self.z = z
 
 class Coup:
-	def __init__(self, bouton, stick_input: Coordonnées, action: melee.Action):
+	def __init__(self, bouton: melee.enums.Button, stick_input: Coordonnées, action: melee.Action):
 		self.bouton = bouton
 		self.stick_input = stick_input
 		self.action = action

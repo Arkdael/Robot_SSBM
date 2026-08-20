@@ -4,13 +4,13 @@ import signal
 import sys
 import melee
 
-from Modules.Approche import ModuleApproche
-from Modules.Attaque import ModuleAttaque
-from Modules.Recovery import ModuleRecovery
-from classes.personnage import Personnage
+from Modules.approche import ModuleApproche
+from Modules.attaque import ModuleAttaque
+from Modules.recovery import ModuleRecovery
+from Modules.survie import ModuleSurvie
 
 # This example program demonstrates how to use the Melee API to run a console,
-#   setup controllers, and send button presses over to a console
+# setup controllers, and send button presses over to a console.
 
 def check_port(value):
 	ivalue = int(value)
@@ -34,17 +34,17 @@ if __name__ == "__main__":
 
 	args = parser.parse_args()
 
-	# This logger object is useful for retroactively debugging issues in your bot
-	#   You can write things to it each frame, and it will create a CSV file describing the match
+	# This logger object is useful for retroactively debugging issues in your bot.
+	# You can write things to it each frame, and it will create a CSV file describing the match.
 	log = None
 	if args.debug:
 		log = melee.Logger()
 
 	# Create our Console object.
-	#   This will be one of the primary objects that we will interface with.
-	#   The Console represents the virtual or hardware system Melee is playing on.
-	#   Through this object, we can get "GameState" objects per-frame so that your
-	#       bot can actually "see" what's happening in the game
+	# 	This will be one of the primary objects that we will interface with.
+	# 	The Console represents the virtual or hardware system Melee is playing on.
+	# 	Through this object, we can get "GameState" objects per-frame so that your
+	# 	bot can actually "see" what's happening in the game.
 	console = melee.Console(
 		path=args.dolphin_executable_path,
 		slippi_address=args.address,
@@ -53,48 +53,48 @@ if __name__ == "__main__":
 		fullscreen=False,
 	)
 
-	# Create our Controller object
-	#   The controller is the second primary object your bot will interact with
-	#   Your controller is your way of sending button presses to the game, whether
-	#   virtual or physical.
+	# Create our Controller object.
+	# 	The controller is the second primary object your bot will interact with
+	# 	Your controller is your way of sending button presses to the game, whether
+	# 	virtual or physical.
 
 	ports = [1]
 	controllers = {
-			port: melee.Controller(
-					console=console,
-					port=port,
-					type=melee.ControllerType.STANDARD)
-			for port in ports
+		port: melee.Controller(
+			console=console,
+			port=port,
+			type=melee.ControllerType.STANDARD)
+		for port in ports
 	}
 
-	# This isn't necessary, but makes it so that Dolphin will get killed when you ^C
+	# This isn't necessary, but makes it so that Dolphin will get killed when you ^C.
 	def signal_handler(sig, frame):
 		for controller in controllers.values():
 			controller.disconnect()
 		console.stop()
 		if args.debug:
 			log.writelog()
-			print("") #because the ^C will be on the terminal
+			print("") # because the ^C will be on the terminal.
 			print("Log file created: " + log.filename)
 		print("Shutting down cleanly...")
 		sys.exit(0)
 
 	signal.signal(signal.SIGINT, signal_handler)
 
-	# Run the console
+	# Run the console.
 	console.run(iso_path=args.iso)
 
-	# Connect to the console
+	# Connect to the console.
 	print("Connecting to console...")
 	if not console.connect():
 		print("ERROR: Failed to connect to the console.")
 		sys.exit(-1)
 	print("Console connected")
 
-	# Plug our controller in
-	#   Due to how named pipes work, this has to come AFTER running dolphin
-	#   NOTE: If you're loading a movie file, don't connect the controller,
-	#   dolphin will hang waiting for input and never receive it
+	# Plug our controller in.
+	# 	Due to how named pipes work, this has to come AFTER running dolphin.
+	# 	NOTE: If you're loading a movie file, don't connect the controller,
+	# 	dolphin will hang waiting for input and never receive it.
 	print("Connecting controller to console...")
 	for controller in controllers.values():
 		if not controller.connect():
@@ -102,27 +102,25 @@ if __name__ == "__main__":
 			sys.exit(-1)
 	print("Controller connected")
 
-	costume = 0
-	framedata = melee.framedata.FrameData()
-
 	menu_helper = melee.MenuHelper()
 
 	moduleApproche = ModuleApproche(controller=controllers.get(1))
 	moduleAttaque = ModuleAttaque(controller=controllers.get(1))
 	moduleRecovery = ModuleRecovery(controller=controllers.get(1))
+	moduleSurvie = ModuleSurvie(controller=controllers.get(1))
 
 	# Main loop
 	while(True):
-		# "step" to the next frame
+		# "step" to the next frame.
 		gamestate = console.step()
 		if gamestate is None:
 			continue
 
-		# The console object keeps track of how long your bot is taking to process frames
-		#   And can warn you if it's taking too long
+		# The console object keeps track of how long your bot is taking to process frames.
+		# 	And can warn you if it's taking too long.
 		if console.processingtime * 1000 > 12:
 			print("WARNING: Last frame took " + str(console.processingtime*1000) + "ms to process.")
-
+ 
 		# What menu are we in?
 		if gamestate.menu_state in [melee.Menu.IN_GAME, melee.Menu.SUDDEN_DEATH]:
 			for port, controller in controllers.items():
@@ -132,45 +130,36 @@ if __name__ == "__main__":
 				if(gamestate.players[port].cpu_level <= 0):
 					# NOTE: This is where your AI does all of its stuff!
 					# This line will get hit once per frame, so here is where you read
-					#   in the gamestate and decide what buttons to push on the controller
+					# in the gamestate and decide what buttons to push on the controller.
+					if(moduleSurvie.doit_survivre(gamestate=gamestate, port_opposant=port_opposant)):
+						moduleSurvie.survivre(gamestate=gamestate, port_opposant=port_opposant)
+						continue
 					if(moduleApproche.doit_approcher(gamestate=gamestate)):
 						moduleApproche.approcher(gamestate=gamestate, port_opposant=port_opposant)
+						continue
 					if(moduleAttaque.doit_attaquer(gamestate=gamestate, port_opposant=port_opposant)):
 						moduleAttaque.attaquer(gamestate=gamestate, port_opposant=port_opposant)
+						continue
 					if(moduleRecovery.doit_recover(gamestate=gamestate)):
 						moduleRecovery.recover(gamestate=gamestate)
-
-			# Log this frame's detailed info if we're in game
+						continue
+			# Log this frame's detailed info if we're in game.
 			if log:
 				log.logframe(gamestate)
 				log.writeframe()
 		else:
 			for port, controller in controllers.items():
-				if(port == 1):
-					menu_helper.menu_helper_simple(
-						gamestate,
-						controller,
-						melee.Character.LUIGI,
-						melee.Stage.RANDOM_STAGE,
-						args.connect_code,
-						costume=port,
-						autostart=port==1,
-						swag=False)
-				else:
-					menu_helper.menu_helper_simple(
-						gamestate,
-						controller,
-						melee.Character.FOX,
-						melee.Stage.RANDOM_STAGE,
-						args.connect_code,
-						9,
-						costume=port,
-						autostart=port==1,
-						swag=False
-					)
+				menu_helper.menu_helper_simple(
+					gamestate=gamestate,
+					controller=controller,
+					character_selected=melee.Character.LUIGI if(port==1) else melee.Character.FOX,
+					stage_selected=melee.Stage.RANDOM_STAGE,
+					connect_code=args.connect_code,
+					cpu_level=0 if(port==1) else 9,
+					costume=port,
+					autostart=(port==1),
+					swag=False)
 
-			# If we're not in game, don't log the frame
+			# If we're not in game, don't log the frame.
 			if log:
 				log.skipframe()
-
-	console.stop()

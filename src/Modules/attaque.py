@@ -2,8 +2,7 @@ import melee
 from classes.personnage import Personnage
 
 class ModuleAttaque:
-
-	def __init__(self, controller):
+	def __init__(self, controller: melee.Controller):
 		self.controller = controller
 		self.personnage = Personnage(controller)
 		

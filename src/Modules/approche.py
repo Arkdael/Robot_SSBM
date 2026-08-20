@@ -1,8 +1,7 @@
 import melee
 
 class ModuleApproche:
-
-	def __init__(self, controller):
+	def __init__(self, controller: melee.Controller):
 		self.controller = controller
 
 	def doit_approcher(self, gamestate: melee.GameState):
