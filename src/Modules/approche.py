@@ -9,13 +9,13 @@ class ModuleApproche:
 			return False
 		return True
 
-	def approcher(self, gamestate: melee.GameState, port_opposant: int):
+	def approcher(self, gamestate: melee.GameState, opposant: melee.PlayerState):
 		# Simplement suivre l'opposant.
-		onleft = gamestate.players[self.controller.port].position.x < gamestate.players[port_opposant].position.x
+		onleft = gamestate.players[self.controller.port].position.x < opposant.position.x
 		self.controller.tilt_analog(melee.enums.Button.BUTTON_MAIN, int(onleft), 0.5)
 
 		# Sauter au besoin
-		if(gamestate.players[self.controller.port].position.y <= gamestate.players[port_opposant].position.y and abs(gamestate.players[self.controller.port].position.y - gamestate.players[port_opposant].position.y) > 20):
+		if(gamestate.players[self.controller.port].position.y <= opposant.position.y and abs(gamestate.players[self.controller.port].position.y - opposant.position.y) > 20):
 			if(self.controller.prev is not None):
 				if(not self.controller.prev.button[melee.enums.Button.BUTTON_Y]):
 					self.controller.press_button(melee.enums.Button.BUTTON_Y)

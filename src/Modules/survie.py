@@ -1,5 +1,4 @@
 import math
-from typing import Literal
 import melee
 from classes.personnage import Personnage
 
@@ -11,19 +10,19 @@ class ModuleSurvie:
 		self.personnage = Personnage(controller)
 		self.frameData = melee.framedata.FrameData()
 		
-	def doit_survivre(self, gamestate: melee.GameState, port_opposant: int):
+	def doit_survivre(self, gamestate: melee.GameState, opposant: melee.PlayerState):
 		if(gamestate.players[self.controller.port].action.value >= melee.enums.Action.DAMAGE_FLY_HIGH.value and gamestate.players[self.controller.port].action.value <= melee.enums.Action.DAMAGE_FLY_ROLL.value):
 			return True
 
-	def survivre(self, gamestate: melee.GameState, port_opposant: int):
+	def survivre(self, gamestate: melee.GameState, opposant: melee.PlayerState):
 		angle_projection = (math.degrees(-math.atan2(gamestate.players[self.controller.port].speed_x_attack, gamestate.players[self.controller.port].speed_y_attack)) + 90) % 360
 
 		if(self.frameData.project_hit_location(gamestate.players[self.controller.port], gamestate.stage)[0] or 0 > melee.stages.BLASTZONES[gamestate.stage][0]):
-			return self.DI_survie(gamestate=gamestate, angle_projection=angle_projection, port_opposant=port_opposant)
+			return self.DI_survie(gamestate=gamestate, angle_projection=angle_projection, opposant=opposant)
 		else:
-			return self.DI_combo(gamestate=gamestate, angle_projection=angle_projection, port_opposant=port_opposant)
+			return self.DI_combo(gamestate=gamestate, angle_projection=angle_projection, opposant=opposant)
 
-	def DI_survie(self, gamestate: melee.GameState, angle_projection: float, port_opposant: int):
+	def DI_survie(self, gamestate: melee.GameState, angle_projection: float, opposant: melee.PlayerState):
 		angle_di = angle_projection
 		if 0 <= angle_projection <= 40:
 			angle_di = (angle_projection - 90) % 360
@@ -38,8 +37,8 @@ class ModuleSurvie:
 		self.controller.tilt_analog(melee.enums.Button.BUTTON_MAIN, cardinaux[0], cardinaux[1])
 		return
 
-	def DI_combo(self, gamestate: melee.GameState,  angle_projection: float, port_opposant: int):
-		onleft = gamestate.players[self.controller.port].position.x < gamestate.players[port_opposant].position.x
+	def DI_combo(self, gamestate: melee.GameState,  angle_projection: float, opposant: melee.PlayerState):
+		onleft = gamestate.players[self.controller.port].position.x < opposant.position.x
 		self.controller.tilt_analog(melee.enums.Button.BUTTON_MAIN, int(not onleft), 0.5)
 		return
 

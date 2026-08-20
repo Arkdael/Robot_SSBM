@@ -6,17 +6,17 @@ class ModuleAttaque:
 		self.controller = controller
 		self.personnage = Personnage(controller)
 		
-	def doit_attaquer(self, gamestate: melee.GameState, port_opposant: int):
+	def doit_attaquer(self, gamestate: melee.GameState, opposant: melee.PlayerState):
 		for coup in self.personnage.coups:
-			if(self.personnage.in_range(gamestate.players[self.controller.port], gamestate.players[port_opposant], gamestate.stage, coup)):
+			if(self.personnage.in_range(gamestate.players[self.controller.port], opposant, gamestate.stage, coup)):
 				return True
 			else:
 				continue
 
-	def attaquer(self, gamestate: melee.GameState, port_opposant: int):
+	def attaquer(self, gamestate: melee.GameState, opposant: melee.PlayerState):
 		# Essaye chaque coup, prend le premier que devrais toucher.
 		for coup in self.personnage.coups:
-			if(self.personnage.in_range(gamestate.players[self.controller.port], gamestate.players[port_opposant], gamestate.stage, coup)):
-				onleft = gamestate.players[self.controller.port].position.x < gamestate.players[port_opposant].position.x
+			if(self.personnage.in_range(gamestate.players[self.controller.port], opposant, gamestate.stage, coup)):
+				onleft = gamestate.players[self.controller.port].position.x < opposant.position.x
 				self.personnage.effectuer_coup(action=coup, direction=int(onleft))
 				return
