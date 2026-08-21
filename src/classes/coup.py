@@ -1,10 +1,6 @@
 import melee
 
-class Coordonnées:
-	def __init__(self, x: float|None = None, y: float|None = None, z: float|None = None):
-		self.x = x
-		self.y = y
-		self.z = z
+from classes.input import Coordonnées
 
 class Coup:
 	def __init__(self, bouton: melee.enums.Button, stick_input: Coordonnées, action: melee.Action):

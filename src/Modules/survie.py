@@ -2,7 +2,7 @@ import math
 import melee
 from classes.personnage import Personnage
 
-class ModuleSurvie:
+class ModuleSurvie():
 	""" Module pour gérer l'influence directionnel après s'être fait frappé. """
 
 	def __init__(self, controller: melee.Controller):

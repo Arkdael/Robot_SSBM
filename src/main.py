@@ -6,9 +6,16 @@ import melee
 
 from typing import NoReturn
 from Modules.approche import ModuleApproche
+#from Modules.attaque import ModuleAttaque
+#from Modules.recovery import ModuleRecovery
+#from Modules.survie import ModuleSurvie
 from Modules.attaque import ModuleAttaque
 from Modules.recovery import ModuleRecovery
 from Modules.survie import ModuleSurvie
+from classes import personnage
+from classes.coup import Coup, Coordonnées
+from classes.input import Input, TypeInput
+from classes.personnage import Personnage
 
 # This example program demonstrates how to use the Melee API to run a console,
 # setup controllers, and send button presses over to a console.
@@ -20,6 +27,7 @@ class Robot:
 		self.connect_code = connect_code
 		self.iso = iso
 		self.ports = ports
+		self.pile_exécution: list[Input] = []
 
 		# This logger object is useful for retroactively debugging issues in your bot.
 		# You can write things to it each frame, and it will create a CSV file describing the match.
@@ -95,6 +103,7 @@ class Robot:
 
 		self.menu_helper = melee.MenuHelper()
 
+		self.personnage = Personnage(controller=self.controllers.get(self.ports[0]))
 		self.moduleApproche = ModuleApproche(controller=self.controllers.get(self.ports[0]))
 		self.moduleAttaque = ModuleAttaque(controller=self.controllers.get(self.ports[0]))
 		self.moduleRecovery = ModuleRecovery(controller=self.controllers.get(self.ports[0]))
@@ -127,19 +136,38 @@ class Robot:
 
 				# Considère n'importe quel joueur qui ne partage pas son port comme son opposant.
 				opposant = gamestate.players[list(filter(lambda key: key is not port, gamestate.players.keys()))[-1]]
+				if(self.pile_exécution.__len__() > 0):
+					print(self.pile_exécution)
+					#self.personnage.effectuer_coup(self.personnage.coups[self.pile_exécution[0][0]], self.pile_exécution[0][1])
+					if(self.pile_exécution[0] is not None):
+						match self.pile_exécution[0].type:
+							case TypeInput.APPUYER:
+								self.pile_exécution.pop(0).exécuter_input(controller)
+							case TypeInput.RELACHER:
+								self.pile_exécution.pop(0).exécuter_input_inverse(controller)
+							case _:
+								self.pile_exécution.pop(0)
+					else:
+						self.pile_exécution.pop(0)
 
-				if(self.moduleSurvie.doit_survivre(gamestate=gamestate, opposant=opposant)):
-					self.moduleSurvie.survivre(gamestate=gamestate, opposant=opposant)
-					
-				if(self.moduleApproche.doit_approcher(gamestate=gamestate)):
-					self.moduleApproche.approcher(gamestate=gamestate, opposant=opposant)
-					
-				if(self.moduleAttaque.doit_attaquer(gamestate=gamestate, opposant=opposant)):
-					self.moduleAttaque.attaquer(gamestate=gamestate, opposant=opposant)
-					
 				if(self.moduleRecovery.doit_recover(gamestate=gamestate)):
-					self.moduleRecovery.recover(gamestate=gamestate)
-					
+					séquence_input = self.moduleRecovery.recover(gamestate=gamestate)
+					for input in séquence_input:
+						self.pile_exécution.append(input)
+
+				elif(self.moduleSurvie.doit_survivre(gamestate=gamestate, opposant=opposant)):
+					self.moduleSurvie.survivre(gamestate=gamestate, opposant=opposant)
+
+				elif(self.moduleAttaque.doit_attaquer(gamestate=gamestate, opposant=opposant)):
+					séquence_input = self.moduleAttaque.choisir_attaque(gamestate=gamestate, opposant=opposant)
+					for input in séquence_input:
+						self.pile_exécution.append(input)
+
+				elif(self.moduleApproche.doit_approcher(gamestate=gamestate, opposant=opposant)):
+					séquence_input = self.moduleApproche.approcher(gamestate=gamestate, opposant=opposant)
+					for input in séquence_input:
+						self.pile_exécution.append(input)
+
 		# Log this frame's detailed info if we're in game.
 		if self.log:
 			self.log.logframe(gamestate)
@@ -150,12 +178,12 @@ class Robot:
 			self.menu_helper.menu_helper_simple(
 				gamestate=gamestate,
 				controller=controller,
-				character_selected=melee.Character.LUIGI if(port==1) else melee.Character.FOX,
+				character_selected=melee.Character.LUIGI if(port==self.ports[0]) else melee.Character.FOX,
 				stage_selected=melee.Stage.RANDOM_STAGE,
 				connect_code=self.connect_code,
-				cpu_level=0 if(port==1) else 9,
+				cpu_level=0 if(port==self.ports[0]) else 9,
 				costume=port,
-				autostart=(port==1),
+				autostart=(port==self.ports[0]),
 				swag=False)
 
 		# If we're not in game, don't log the frame.

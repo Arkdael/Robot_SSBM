@@ -3,7 +3,7 @@ import melee
 from classes.coup import Coup, Coordonnées
 
 class Personnage:
-	coups: dict = {
+	coups: dict[melee.enums.Action, Coup] = {
 		melee.enums.Action.NEUTRAL_ATTACK_1: Coup(melee.enums.Button.BUTTON_A, Coordonnées(0.5, 0.5), melee.Action.NEUTRAL_ATTACK_1),
 		melee.enums.Action.DASH_ATTACK: Coup(melee.enums.Button.BUTTON_A, Coordonnées(0.5, 0.5), melee.Action.DASH_ATTACK),
 		melee.enums.Action.FTILT_HIGH: Coup(melee.enums.Button.BUTTON_A, Coordonnées(None, 0.9), melee.Action.FTILT_HIGH),
@@ -38,7 +38,7 @@ class Personnage:
 	def effectuer_coup(self, action: melee.enums.Action, direction: float = 1.0):
 		#TODO faire en sorte qu'on puisse spécifier pendant combien de frame maintenir le bouton avant de relacher.
 		coup: Coup = self.coups[action]
-		
+
 		# Si le bouton est un stick, on l'incline plutôt que d'appuyer.
 		if(coup.bouton in [melee.enums.Button.BUTTON_MAIN, melee.enums.Button.BUTTON_C]):
 			if(round(self.controller.prev.c_stick[0], 2) != 0.5 or round(self.controller.prev.c_stick[1], 2) != 0.5):
